@@ -12,6 +12,20 @@
  * @link      http://pear.php.net/package/PHP_CodeSniffer
  */
 
+/*
+ * T_ML_COMMENT does not exist in PHP 5.
+ * The following three lines define it in order to
+ * preserve backwards compatibility.
+ *
+ * The next two lines define the PHP 5 only T_DOC_COMMENT,
+ * which we will mask as T_ML_COMMENT for PHP 4.
+ */
+if (!defined('T_ML_COMMENT')) {
+   define('T_ML_COMMENT', T_COMMENT);
+} else {
+   define('T_DOC_COMMENT', T_ML_COMMENT);
+}
+
 /**
  * Holds details of a scope.
  *
@@ -555,7 +569,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
         // so we look backwards from the opening bracket for the first thing that
         // isn't a function name, reference sigil or whitespace and check if
         // it's a function keyword.
-        $functionPtr = $phpcsFile->findPrevious(array(T_STRING, T_WHITESPACE, T_BITWISE_AND),
+        $functionPtr = $phpcsFile->findPrevious(array(T_STRING, T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT, T_BITWISE_AND),
             $openPtr - 1, null, true, null, true);
         if (($functionPtr !== false) &&
             ($tokens[$functionPtr]['code'] === T_FUNCTION)) {
@@ -603,7 +617,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
         $tokens = $phpcsFile->getTokens();
 
         // Is the next non-whitespace an assignment?
-        $nextPtr = $phpcsFile->findNext(T_WHITESPACE, $stackPtr + 1, null, true, null, true);
+        $nextPtr = $phpcsFile->findNext(array(T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT), $stackPtr + 1, null, true, null, true);
         if ($nextPtr !== false) {
             if ($tokens[$nextPtr]['code'] === T_EQUAL) {
                 return $nextPtr;
@@ -669,7 +683,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
 
         if ($openPtr = $this->findContainingBrackets($phpcsFile, $stackPtr)) {
             // First non-whitespace thing and see if it's a T_STRING function name
-            $functionPtr = $phpcsFile->findPrevious(T_WHITESPACE,
+            $functionPtr = $phpcsFile->findPrevious(array(T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT),
                 $openPtr - 1, null, true, null, true);
             if ($tokens[$functionPtr]['code'] === T_STRING) {
                 return $functionPtr;
@@ -694,7 +708,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
         }
 
         // $stackPtr is the function name, find our brackets after it
-        $openPtr = $phpcsFile->findNext(T_WHITESPACE,
+        $openPtr = $phpcsFile->findNext(array(T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT),
             $stackPtr + 1, null, true, null, true);
         if (($openPtr === false) || ($tokens[$openPtr]['code'] !== T_OPEN_PARENTHESIS)) {
             return false;
@@ -742,7 +756,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
         // so we look backwards from the opening bracket for the first thing that
         // isn't a function name, reference sigil or whitespace and check if
         // it's a function keyword.
-        $functionPtr = $phpcsFile->findPrevious(array(T_STRING, T_WHITESPACE, T_BITWISE_AND),
+        $functionPtr = $phpcsFile->findPrevious(array(T_STRING, T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT, T_BITWISE_AND),
             $openPtr - 1, null, true, null, true);
         if (($functionPtr !== false) &&
             (($tokens[$functionPtr]['code'] === T_FUNCTION) ||
@@ -750,7 +764,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
             // TODO: typeHint
             $this->markVariableDeclaration($varName, 'param', null, $stackPtr, $functionPtr);
             // Are we pass-by-reference?
-            $referencePtr = $phpcsFile->findPrevious(T_WHITESPACE,
+            $referencePtr = $phpcsFile->findPrevious(array(T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT),
                 $stackPtr - 1, null, true, null, true);
             if (($referencePtr !== false) && ($tokens[$referencePtr]['code'] === T_BITWISE_AND)) {
                 $varInfo = $this->getVariableInfo($varName, $functionPtr);
@@ -804,7 +818,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
         // so we look backwards from the opening bracket for the first thing that
         // isn't a function name, reference sigil or whitespace and check if
         // it's a function keyword.
-        $catchPtr = $phpcsFile->findPrevious(T_WHITESPACE,
+        $catchPtr = $phpcsFile->findPrevious(array(T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT),
             $openPtr - 1, null, true, null, true);
         if (($catchPtr !== false) &&
             ($tokens[$catchPtr]['code'] === T_CATCH)) {
@@ -970,7 +984,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
             return false;
         }
 
-        $prevPtr = $phpcsFile->findPrevious(T_WHITESPACE, $openPtr - 1, null, true, null, true);
+        $prevPtr = $phpcsFile->findPrevious(array(T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT), $openPtr - 1, null, true, null, true);
         if (($prevPtr === false) || ($tokens[$prevPtr]['code'] !== T_LIST)) {
             return false;
         }
@@ -999,7 +1013,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
         // Are we a global declaration?
         // Search backwards for first token that isn't whitespace, comma or variable.
         $globalPtr = $phpcsFile->findPrevious(
-            array(T_WHITESPACE, T_VARIABLE, T_COMMA),
+            array(T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT, T_VARIABLE, T_COMMA),
             $stackPtr - 1, null, true, null, true);
         if (($globalPtr === false) || ($tokens[$globalPtr]['code'] !== T_GLOBAL)) {
             return false;
@@ -1040,7 +1054,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
         // equals, or on the list of assignable constant values above.
         $staticPtr = $phpcsFile->findPrevious(
             array(
-                T_WHITESPACE, T_VARIABLE, T_COMMA, T_EQUAL,
+                T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT, T_VARIABLE, T_COMMA, T_EQUAL,
                 T_MINUS, T_LNUMBER, T_DNUMBER,
                 T_CONSTANT_ENCAPSED_STRING,
                 T_STRING,
@@ -1061,7 +1075,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
         // static:: isn't allowed in a compile-time constant, we also know
         // we can't be part of a static declaration anyway, so there's no
         // need to look any further.
-        $lateStaticBindingPtr = $phpcsFile->findNext(T_WHITESPACE, $staticPtr + 1, null, true, null, true);
+        $lateStaticBindingPtr = $phpcsFile->findNext(array(T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT), $staticPtr + 1, null, true, null, true);
         if (($lateStaticBindingPtr !== false) && ($tokens[$lateStaticBindingPtr]['code'] === T_DOUBLE_COLON)) {
             return false;
         }
@@ -1150,7 +1164,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
             if ($ptr === $stackPtr) {
                 continue;
             }
-            if ($tokens[$ptr]['code'] !== T_WHITESPACE) {
+            if (!in_array($tokens[$ptr]['code'], array(T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT))) {
                 return false;
             }
         }
@@ -1174,7 +1188,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
         // Are we a symbolic object property/function derefeference?
         // Search backwards for first token that isn't whitespace, is it a "->" operator?
         $objectOperatorPtr = $phpcsFile->findPrevious(
-            T_WHITESPACE,
+            array(T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT),
             $stackPtr - 1, null, true, null, true);
         if (($objectOperatorPtr === false) || ($tokens[$objectOperatorPtr]['code'] !== T_OBJECT_OPERATOR)) {
             return false;
@@ -1368,7 +1382,7 @@ class Generic_Sniffs_CodeAnalysis_VariableAnalysisSniff implements PHP_CodeSniff
         foreach ($arguments as $argumentPtrs) {
             $argumentPtrs = array_values(array_filter($argumentPtrs,
                 function ($argumentPtr) use ($tokens) {
-                    return $tokens[$argumentPtr]['code'] !== T_WHITESPACE;
+                    return !in_array($tokens[$argumentPtr]['code'], array(T_WHITESPACE, T_COMMENT, T_ML_COMMENT, T_DOC_COMMENT));
                 }));
             if (empty($argumentPtrs)) {
                 continue;
